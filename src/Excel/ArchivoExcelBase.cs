@@ -9,50 +9,57 @@ using DocumentFormat.OpenXml.Spreadsheet;
 
 namespace Excel
 {
+    public delegate void AgregarEncabezadosHandler();
+    public delegate void AgregarInformacionHandler();
+    public delegate void EstablecerAnchoColumnasHandler();
+
+
     public class ArchivoExcelBase
     {
-        private const double TAMANIO_LETRA = 0.96;
-        private const double TAMANIO_CELDA_POR_DEFECTO = 12.50;
+        private string[] _arrLetras = new string[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" };
+        private const double TAMANIO_LETRA = 1.0;
+        private const double TAMANIO_CELDA_POR_DEFECTO = 12.15;
         private SpreadsheetDocument _documentoExcel { get; set; }
         private WorkbookPart _libro { get; set; }
         private WorksheetPart _hojaCalculo { get; set; }
         private Sheets _hojas { get; set; }
         private SheetData _sheetData { get; set; }
-        private UInt32 _numeroFila { get; set; }
-        private string[] _letras { get; set; }        
+        private UInt32 _numeroFila { get; set; }     
         private int _indiceLetra { get; set; }
         private string _direccion { get; set; }     
         protected string _rutaArchivo { get; set; }
+
+        private string[] _letras;
+        public string[] Letras
+        {
+            get { return _letras; }
+            private set { _letras = value; }
+        }
+
         private DataTable _fuenteDeDatos;
         public DataTable FuenteDeDatos
         {
             get { return _fuenteDeDatos; }
-            set 
-            {
-                if (FuenteDeDatos.Rows.Count > 26)
-                    _letras = ObtenerLetras(FuenteDeDatos.Rows.Count);
+            set { _fuenteDeDatos = value; CargarLetras(); }
+        }
 
-                _fuenteDeDatos = value; 
-            }
+        private string[] _encabezados; 
+        public string[] Encabezados 
+        { 
+            get { return _encabezados; } 
+            set { _encabezados = value; CargarLetras(); }
         }
         
         private Worksheet _workSheet;
         public Worksheet WorkSheet
         {
-            get 
-            { 
-                _workSheet = _hojaCalculo.Worksheet; 
-                return _workSheet;
-            }
-            set { _workSheet = value; }
+            get { return _workSheet; }
+            private set { _workSheet = value; }
         }
       
         public string Titulo { get; set; }
-        public string NombreHoja { get; set; }    
-        public string[] Encabezados { get; set; }
-        public delegate void AgregarEncabezadosHandler();
-        public delegate void AgregarInformacionHandler();
-        public delegate void EstablecerAnchoColumnasHandler();
+        public string NombreHoja { get; set; }
+        public string[] ExcluirColumnas { get; set; }    
         public AgregarEncabezadosHandler EncabezadosHandler { get; set; }
         public AgregarInformacionHandler InformacionHandler { get; set; }
         public EstablecerAnchoColumnasHandler AnchoColumnasHandler { get; set; }
@@ -67,9 +74,42 @@ namespace Excel
             Inicializar();
         }
 
+        public Row GetFila()
+        {
+            Row fila = new Row { RowIndex = _numeroFila };
+            _numeroFila++;
+            return fila;
+        }
+
+        public UInt32 GeFilaActual()
+        {
+            var numeroFila = _numeroFila;
+
+            if (numeroFila > 1)
+                return numeroFila - 1;
+
+            return numeroFila;
+        }
+
+        public string GetLetra(int indice)
+        {
+            if (indice < 0 || indice > _letras.Count())
+                throw new ArgumentOutOfRangeException(nameof(_letras));
+
+            return _letras[indice].ToString();
+        }
+
+        public void SetIndiceLetra(int valor)
+        {
+            if (valor < 0)
+                throw new ArgumentException("No se puede asignar un indice negativo", nameof(_indiceLetra));
+
+            _indiceLetra = valor;
+        }
+
         private void Inicializar()
         {
-            _letras = new string[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" };
+            _letras = _arrLetras;
             _indiceLetra = 0;
             _direccion = "A1";
             _numeroFila = UInt32.Parse("1");
@@ -77,7 +117,7 @@ namespace Excel
 
         protected void CrearLibro()
         {
-            _documentoExcel = SpreadsheetDocument.Create(this._rutaArchivo, SpreadsheetDocumentType.Workbook);
+            _documentoExcel = SpreadsheetDocument.Create(_rutaArchivo, SpreadsheetDocumentType.Workbook);
 
             WorkbookPart workbookpart = _documentoExcel.AddWorkbookPart();
             workbookpart.Workbook = new Workbook();
@@ -94,14 +134,16 @@ namespace Excel
             _hojaCalculo = worksheetPart;
             AdicionarHoja(nombreLibro, index);
 
-            _sheetData = _hojaCalculo.Worksheet.GetFirstChild<SheetData>();
+            _workSheet = _hojaCalculo.Worksheet;
+            _sheetData = _workSheet.GetFirstChild<SheetData>();
+             
         }
 
         protected virtual void AdicionarHoja(string nombreLibro, UInt32 indexTag)
         {
             Sheet hoja = new Sheet()
             {
-                Id = this._documentoExcel.WorkbookPart.GetIdOfPart(_hojaCalculo),
+                Id = _documentoExcel.WorkbookPart.GetIdOfPart(_hojaCalculo),
                 SheetId = indexTag,
                 Name = nombreLibro
             };
@@ -121,45 +163,80 @@ namespace Excel
                 _documentoExcel.Close();
         }
 
-        protected string[] ObtenerLetras(int cantidadLetras)
+        public void AgregarFila(OpenXmlElement hijo)
         {
-            int longuitud = 26;
-		    int iteraciones = (cantidadLetras / longuitud) - 1;
+            if (hijo != null)
+                _sheetData.Append(hijo);
+        }
 
-            return _letras
+        protected void CargarLetras()
+        {
+            var cantidadLetras = 0;
+
+            if (FuenteDeDatos != null && Encabezados != null)
+            {
+                if (FuenteDeDatos.Columns.Count > Encabezados.Length)
+                    cantidadLetras = FuenteDeDatos.Columns.Count;
+                else
+                    cantidadLetras = Encabezados.Length;
+            }
+            else if (FuenteDeDatos != null && Encabezados == null)
+                cantidadLetras = FuenteDeDatos.Columns.Count;
+            else if (Encabezados != null && FuenteDeDatos == null)
+                cantidadLetras = Encabezados.Length;
+
+		    int iteraciones = (cantidadLetras / 26) + 1;
+
+            _letras = _arrLetras
                 .Select((letra, indice) => new { letra, indice })
                 .Where(o => o.indice < iteraciones)
                 .Prepend(new { letra = "", indice = -1 })
-                .Select(o => new { letra = o.letra, letras = _letras })
+                .Select(o => new { letra = o.letra, letras = _arrLetras })
                 .SelectMany(o => o.letras, (letra1, letra2) => letra1.letra + letra2)
-                .ToArray(); 
+                .ToArray();
         }
 
-        protected virtual void CalcularAnchoCelda()
+        protected virtual void CalcularAnchoColumnas()
         {
             Regex regex = new Regex("[A-Za-z]+");
             Match match;
 
             var celdas = _sheetData.Descendants<Cell>();
 
-            var groupby = celdas
+            var configAnchoCeldas = celdas
                 .GroupBy(c =>
                 {
                     match = regex.Match(c.CellReference.ToString());
                     return match.Value;
                 })
                 .Select((g, index) => new { Letra = g.Key, Puntos = g.Max(cv => cv.CellValue.InnerText.Length) * TAMANIO_LETRA })
-                .OrderBy(o => o.Letra)
-                .Select((o, i) => new { Indice = i + 1, o.Puntos })
-                .Where(o => o.Puntos > TAMANIO_CELDA_POR_DEFECTO);
+                .Select((o, i) => new { IndiceCelda = i + 1, o.Puntos })
+                .Where(o => o.Puntos > TAMANIO_CELDA_POR_DEFECTO)
+                .ToArray();
 
-            foreach (var item in groupby)
+            foreach (var config in configAnchoCeldas)
             {
-                EstablecerAnchoCelda(item.Indice, item.Puntos);
+                EstablecerAnchoColumna(config.IndiceCelda, config.Puntos);
             }
         }
 
-        public void EstablecerAnchoCelda(int indice, DoubleValue ancho)
+        protected void EstablecerEncabezados()
+        {
+            if (Encabezados == null && FuenteDeDatos != null)
+            {
+                var encabezados = FuenteDeDatos.Columns
+                    .Cast<DataColumn>();
+
+                if (ExcluirColumnas != null && ExcluirColumnas.Length > 0)
+                    encabezados = encabezados.Where(c => !ExcluirColumnas.Contains(c.ColumnName));
+
+                Encabezados = encabezados
+                    .Select(c => c.ColumnName)
+                    .ToArray();
+            }
+        }
+
+        public void EstablecerAnchoColumna(int indice, DoubleValue ancho)
         {
             uint Index = (uint)indice;
 
