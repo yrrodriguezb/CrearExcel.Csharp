@@ -21,29 +21,29 @@ namespace Excel
         public void Construir()
         {
             AgregarTitulo();
+
+            if (SubtitulosHandler != null)
+                SubtitulosHandler();
+
             WorkSheet.Save();
+        }
+
+        private void AgregarTextoFila(Row fila, string texto)
+        {
+            fila.GetFirstChild<Cell>().CellValue = new CellValue(texto);
+            CombinarCeldas(GetLetra(0) + fila.RowIndex, GetLetra(LonguitudColumnas) + fila.RowIndex);
         }
 
         private void AgregarTitulo()
         {
-            Row fila = GetFila();
-            var numeroFila = GeFilaActual().ToString();
+            Row fila = NuevaFila(LonguitudColumnas, CellValues.String);
+            AgregarTextoFila(fila, Titulo);
+        }
 
-            OpenXmlElement[] xmlElement = Enumerable.Range(-1, 15)
-                .Select((indice) =>
-                {
-                    return new Cell
-                    {
-                        CellReference = GetLetra(indice + 1) + numeroFila,
-                        DataType = CellValues.String,
-                        CellValue = new CellValue(indice > -1 ? string.Empty : Titulo)
-                    };
-                })
-                .ToArray();
-
-            fila.Append(xmlElement);
-            AgregarFila(fila);
-            CombinarCeldas(GetLetra(0) + numeroFila, GetLetra(Letras.Length - 1).ToString() + numeroFila);
+        public void AgregarSubTitulo(string subTitulo)
+        {
+            Row fila = NuevaFila(LonguitudColumnas, CellValues.String, 0);
+            AgregarTextoFila(fila, subTitulo);
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
@@ -9,6 +10,7 @@ using DocumentFormat.OpenXml.Spreadsheet;
 
 namespace Excel
 {
+    public delegate void AgregarSubtitulosHandler();
     public delegate void AgregarEncabezadosHandler();
     public delegate void AgregarInformacionHandler();
     public delegate void EstablecerAnchoColumnasHandler();
@@ -25,8 +27,7 @@ namespace Excel
         private Sheets _hojas { get; set; }
         private SheetData _sheetData { get; set; }
         private UInt32 _numeroFila { get; set; }     
-        private int _indiceLetra { get; set; }
-        private string _direccion { get; set; }     
+        private int _indiceLetra { get; set; }  
         protected string _rutaArchivo { get; set; }
 
         private string[] _letras;
@@ -49,6 +50,17 @@ namespace Excel
             get { return _encabezados; } 
             set { _encabezados = value; CargarLetras(); }
         }
+
+        private int _longuitudColumnas;
+        public int LonguitudColumnas
+        {
+            get
+            {
+                _longuitudColumnas = GetLonguitudColumnas(); 
+                return _longuitudColumnas; 
+            }
+            set { _longuitudColumnas = value; }
+        }
         
         private Worksheet _workSheet;
         public Worksheet WorkSheet
@@ -59,7 +71,8 @@ namespace Excel
       
         public string Titulo { get; set; }
         public string NombreHoja { get; set; }
-        public string[] ExcluirColumnas { get; set; }    
+        public string[] ExcluirColumnas { get; set; }
+        public AgregarSubtitulosHandler SubtitulosHandler { get; set; }
         public AgregarEncabezadosHandler EncabezadosHandler { get; set; }
         public AgregarInformacionHandler InformacionHandler { get; set; }
         public EstablecerAnchoColumnasHandler AnchoColumnasHandler { get; set; }
@@ -81,7 +94,7 @@ namespace Excel
             return fila;
         }
 
-        public UInt32 GeFilaActual()
+        public UInt32 GetNumeroFilaActual()
         {
             var numeroFila = _numeroFila;
 
@@ -111,8 +124,9 @@ namespace Excel
         {
             _letras = _arrLetras;
             _indiceLetra = 0;
-            _direccion = "A1";
             _numeroFila = UInt32.Parse("1");
+            _encabezados = new string[] {};
+            _fuenteDeDatos = new DataTable();    
         }
 
         protected void CrearLibro()
@@ -135,8 +149,7 @@ namespace Excel
             AdicionarHoja(nombreLibro, index);
 
             _workSheet = _hojaCalculo.Worksheet;
-            _sheetData = _workSheet.GetFirstChild<SheetData>();
-             
+            _sheetData = _workSheet.GetFirstChild<SheetData>();   
         }
 
         protected virtual void AdicionarHoja(string nombreLibro, UInt32 indexTag)
@@ -163,6 +176,12 @@ namespace Excel
                 _documentoExcel.Close();
         }
 
+        public void EliminarDocumento()
+        {
+            if (File.Exists(_rutaArchivo))
+                File.Delete(_rutaArchivo);
+        }
+
         public void AgregarFila(OpenXmlElement hijo)
         {
             if (hijo != null)
@@ -171,20 +190,7 @@ namespace Excel
 
         protected void CargarLetras()
         {
-            var cantidadLetras = 0;
-
-            if (FuenteDeDatos != null && Encabezados != null)
-            {
-                if (FuenteDeDatos.Columns.Count > Encabezados.Length)
-                    cantidadLetras = FuenteDeDatos.Columns.Count;
-                else
-                    cantidadLetras = Encabezados.Length;
-            }
-            else if (FuenteDeDatos != null && Encabezados == null)
-                cantidadLetras = FuenteDeDatos.Columns.Count;
-            else if (Encabezados != null && FuenteDeDatos == null)
-                cantidadLetras = Encabezados.Length;
-
+            int cantidadLetras = GetLonguitudColumnas();
 		    int iteraciones = (cantidadLetras / 26) + 1;
 
             _letras = _arrLetras
@@ -281,6 +287,47 @@ namespace Excel
             }
             MergeCell mergeCell = new MergeCell() { Reference = new StringValue(celdaInicial + ":" + celdaFinFinal) };
             mergeCells.Append(mergeCell);
+        }
+
+        private int GetLonguitudColumnas()
+        {
+            int longuitud = _encabezados.Length;
+
+            if (longuitud == 0)
+                longuitud = _fuenteDeDatos.Columns.Count;
+
+            return longuitud;
+        }
+
+        public Row NuevaFila(int longuitud)
+        {
+            return NuevaFila(longuitud, CellValues.String);
+        }
+
+        public Row NuevaFila(int longuitud, EnumValue<CellValues> tipo)
+        {
+            return NuevaFila(longuitud, tipo, 0);
+        }
+
+        public Row NuevaFila(int longuitud, EnumValue<CellValues> tipo, UInt32Value estilo)
+        {
+            Row fila = GetFila();
+
+            IEnumerable<Cell> celdas = Enumerable.Range(0, longuitud)
+                .Select((indice) =>
+                {
+                    return new Cell
+                    {
+                        CellReference = _letras[indice] + fila.RowIndex,
+                        DataType = tipo,
+                        StyleIndex = estilo
+                    };
+                });
+
+            fila.Append(celdas);
+            AgregarFila(fila);
+
+            return fila;
         }
     }
 }
