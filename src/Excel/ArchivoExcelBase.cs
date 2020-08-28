@@ -27,7 +27,6 @@ namespace Excel
         private Sheets _hojas { get; set; }
         private SheetData _sheetData { get; set; }
         private UInt32 _numeroFila { get; set; }     
-        private int _indiceLetra { get; set; }  
         protected string _rutaArchivo { get; set; }
 
         private string[] _letras;
@@ -41,13 +40,17 @@ namespace Excel
         public DataTable FuenteDeDatos
         {
             get { return _fuenteDeDatos; }
-            set { _fuenteDeDatos = value; CargarLetras(); }
+            set { _fuenteDeDatos = value; CargarLetras(); SetEncabezados(); }
         }
 
         private string[] _encabezados; 
         public string[] Encabezados 
         { 
-            get { return _encabezados; } 
+            get 
+            { 
+                _encabezados = GetEncabezados();
+                return  _encabezados; 
+            } 
             set { _encabezados = value; CargarLetras(); }
         }
 
@@ -59,7 +62,7 @@ namespace Excel
                 _longuitudColumnas = GetLonguitudColumnas(); 
                 return _longuitudColumnas; 
             }
-            set { _longuitudColumnas = value; }
+            protected set { _longuitudColumnas = value; }
         }
         
         private Worksheet _workSheet;
@@ -68,10 +71,18 @@ namespace Excel
             get { return _workSheet; }
             private set { _workSheet = value; }
         }
-      
+
+        private string[] _excluirColumnas;
+        public string[] ExcluirColumnas
+        {
+            get { return _excluirColumnas; }
+            set { _excluirColumnas = value; }
+        }
+        
         public string Titulo { get; set; }
-        public string NombreHoja { get; set; }
-        public string[] ExcluirColumnas { get; set; }
+        
+        public string NombreHoja {get; set; }
+        
         public AgregarSubtitulosHandler SubtitulosHandler { get; set; }
         public AgregarEncabezadosHandler EncabezadosHandler { get; set; }
         public AgregarInformacionHandler InformacionHandler { get; set; }
@@ -80,11 +91,27 @@ namespace Excel
 
         public ArchivoExcelBase(string rutaArchivo, string titulo, string nombreHoja)
         {
-            this._rutaArchivo = rutaArchivo;
-            this.Titulo = titulo;
-            this.NombreHoja = nombreHoja;
+            _rutaArchivo = rutaArchivo;
+            Titulo = titulo;
+            NombreHoja = nombreHoja;
 
+            Validar();
             Inicializar();
+        }
+
+        private void Validar()
+        {
+            if (IsNull(Titulo))
+                throw new NullReferenceException("El titulo no puede ser nulo");
+
+            if (IsNull(_rutaArchivo))
+                throw new NullReferenceException("La ruta para el archivo no puede ser nulo");
+            
+            if (IsNull(NombreHoja))
+                throw new NullReferenceException("La ruta no puede ser nulo");
+
+            if (NombreHoja.Length > 30)
+                throw new InvalidOperationException("El nombre de la hoja del archivo no puede ser superior a 30 carácteres");
         }
 
         public Row GetFila()
@@ -109,23 +136,15 @@ namespace Excel
             if (indice < 0 || indice > _letras.Count())
                 throw new ArgumentOutOfRangeException(nameof(_letras));
 
-            return _letras[indice].ToString();
-        }
-
-        public void SetIndiceLetra(int valor)
-        {
-            if (valor < 0)
-                throw new ArgumentException("No se puede asignar un indice negativo", nameof(_indiceLetra));
-
-            _indiceLetra = valor;
+            return _letras[indice];
         }
 
         private void Inicializar()
         {
             _letras = _arrLetras;
-            _indiceLetra = 0;
             _numeroFila = UInt32.Parse("1");
             _encabezados = new string[] {};
+            _excluirColumnas = new string[] {};
             _fuenteDeDatos = new DataTable();    
         }
 
@@ -152,7 +171,7 @@ namespace Excel
             _sheetData = _workSheet.GetFirstChild<SheetData>();   
         }
 
-        protected virtual void AdicionarHoja(string nombreLibro, UInt32 indexTag)
+        protected void AdicionarHoja(string nombreLibro, UInt32 indexTag)
         {
             Sheet hoja = new Sheet()
             {
@@ -207,7 +226,9 @@ namespace Excel
             Regex regex = new Regex("[A-Za-z]+");
             Match match;
 
-            var celdas = _sheetData.Descendants<Cell>();
+            var celdas = _sheetData.Descendants<Cell>()
+                .Skip(5)
+                .Where(c => c.CellValue != null);
 
             var configAnchoCeldas = celdas
                 .GroupBy(c =>
@@ -222,19 +243,19 @@ namespace Excel
 
             foreach (var config in configAnchoCeldas)
             {
-                EstablecerAnchoColumna(config.IndiceCelda, config.Puntos);
+                SetAnchoColumna(config.IndiceCelda, config.Puntos);
             }
         }
 
-        protected void EstablecerEncabezados()
+        protected void SetEncabezados()
         {
-            if (Encabezados == null && FuenteDeDatos != null)
+            if (Encabezados.Length == 0)
             {
                 var encabezados = FuenteDeDatos.Columns
                     .Cast<DataColumn>();
 
-                if (ExcluirColumnas != null && ExcluirColumnas.Length > 0)
-                    encabezados = encabezados.Where(c => !ExcluirColumnas.Contains(c.ColumnName));
+                if (_excluirColumnas != null && _excluirColumnas.Length > 0)
+                    encabezados = encabezados.Where(c => !_excluirColumnas.Contains(c.ColumnName));
 
                 Encabezados = encabezados
                     .Select(c => c.ColumnName)
@@ -242,7 +263,7 @@ namespace Excel
             }
         }
 
-        public void EstablecerAnchoColumna(int indice, DoubleValue ancho)
+        public void SetAnchoColumna(int indice, DoubleValue ancho)
         {
             uint Index = (uint)indice;
 
@@ -296,7 +317,22 @@ namespace Excel
             if (longuitud == 0)
                 longuitud = _fuenteDeDatos.Columns.Count;
 
+            if (longuitud > 0 && _excluirColumnas.Length > 0)
+                longuitud -= _excluirColumnas.Length;
+
             return longuitud;
+        }
+
+        private string[] GetEncabezados()
+        {
+            return _encabezados
+                .Where(e => !ExcluirColumna(e))
+                .ToArray();
+        }
+
+        protected bool ExcluirColumna(string nombreColumna)
+        {
+            return ExcluirColumnas != null && ExcluirColumnas.Contains(nombreColumna);
         }
 
         public Row NuevaFila(int longuitud)
@@ -328,6 +364,11 @@ namespace Excel
             AgregarFila(fila);
 
             return fila;
+        }
+
+        private bool IsNull(string str)
+        {
+            return string.IsNullOrEmpty(str) || string.IsNullOrWhiteSpace(str);
         }
     }
 }

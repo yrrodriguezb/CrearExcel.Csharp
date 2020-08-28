@@ -17,6 +17,7 @@ namespace Excel.App
                 _excel.Inicializar();
                 _excel.FuenteDeDatos = dt;
                 _excel.SubtitulosHandler = AgregarSubtitulos;
+                _excel.ExcluirColumnas = new string[] { "Columna 3", "Columna 4" };
                 _excel.Construir();
                 _excel.Guardar();
             }
@@ -31,10 +32,7 @@ namespace Excel.App
         {
             _excel.AgregarSubTitulo("Subtitulo 1");
             _excel.AgregarSubTitulo("Subtitulo 2");
-            _excel.AgregarSubTitulo("Subtitulo 3");
-            _excel.AgregarSubTitulo("Subtitulo 4");
             _excel.NuevaFila(_excel.LonguitudColumnas);
-            _excel.AgregarSubTitulo("Subtitulo 6");
         }
     }
 }

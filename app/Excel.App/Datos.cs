@@ -6,8 +6,8 @@ namespace Excel.App
     {
         public static DataTable CrearTabla()
         {
-            var columnas = 10;
-            var filas = 10;
+            var columnas = 35;
+            var filas = 10000;
 
             DataTable table = new DataTable("ParentTable");
             DataColumn column;
