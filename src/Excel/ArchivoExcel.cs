@@ -66,6 +66,9 @@ namespace Excel
 
         private void AgregarEncabezadosTabla()
         {
+            if (Encabezados.Length == 0)
+                return;
+                
             Row fila = NuevaFila(LonguitudColumnas, "String", HojaEstilos.ENCABEZADO_TABLA);
 
             fila.Cast<Cell>()

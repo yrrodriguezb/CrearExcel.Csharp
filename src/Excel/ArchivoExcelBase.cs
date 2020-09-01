@@ -340,6 +340,9 @@ namespace Excel
             if (longuitud > 0 && _excluirColumnas.Length > 0)
                 longuitud -= _excluirColumnas.Length;
 
+            if (longuitud <= 0)
+                longuitud = 10;
+
             return longuitud;
         }
 
