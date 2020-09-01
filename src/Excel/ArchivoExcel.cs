@@ -1,5 +1,7 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 using System.Linq;
+using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Spreadsheet;
 
@@ -14,6 +16,7 @@ namespace Excel
         public void Inicializar()
         {
             CrearLibro();
+            CrearEstilos();
             CrearHoja(NombreHoja, 1);
         }
 
@@ -36,13 +39,13 @@ namespace Excel
 
         private void AgregarTitulo()
         {
-            Row fila = NuevaFila(LonguitudColumnas - 1, CellValues.String, 0);
+            Row fila = NuevaFila(LonguitudColumnas - 1, "String", HojaEstilos.TITULO);
             AgregarTextoFila(fila, Titulo);
         }
 
         public void AgregarSubTitulo(string subTitulo)
         {
-            Row fila = NuevaFila(LonguitudColumnas - 1, CellValues.String, 0);
+            Row fila = NuevaFila(LonguitudColumnas - 1, "String", HojaEstilos.SUBTITULO);
             AgregarTextoFila(fila, subTitulo);
         }
 
@@ -63,7 +66,7 @@ namespace Excel
 
         private void AgregarEncabezadosTabla()
         {
-            Row fila = NuevaFila(LonguitudColumnas, CellValues.String, 0);
+            Row fila = NuevaFila(LonguitudColumnas, "String", HojaEstilos.ENCABEZADO_TABLA);
 
             fila.Cast<Cell>()
                 .Select((celda, indice) => {
@@ -87,7 +90,7 @@ namespace Excel
             Cell celda = null;
             OpenXmlElement[] xmlElemento = null;
             int indice = 0;
-
+            string texto = string.Empty;
 
             foreach(DataRow fila in filas)
             {
@@ -99,12 +102,14 @@ namespace Excel
                     if (ExcluirColumna(columna.ColumnName))
                         continue;
 
+                    texto = fila[columna.ColumnName].ToString();
+
                     celda = new Cell
                     {
                         CellReference = GetLetra(indice) + filaExcel.RowIndex,
-                        DataType = CellValues.String,
-                        CellValue = new CellValue(fila[columna.ColumnName].ToString()),
-                        StyleIndex = 0
+                        DataType = ResolverTipoDeDatoCelda(texto),
+                        CellValue = new CellValue(texto),
+                        StyleIndex = ResolverEstiloColumna(indice)
                     };
 
                     xmlElemento[indice] = celda;
@@ -114,7 +119,36 @@ namespace Excel
                 filaExcel.Append(xmlElemento);
                 AgregarFila(filaExcel);
                 indice = 0;
+                texto = string.Empty;
             }
+        }
+
+        private EnumValue<CellValues> ResolverTipoDeDatoCelda(string texto)
+        {
+            int numeroInt = 0;
+            double numeroDouble = 0;
+
+            bool match = new Regex(@"^0$|^[^0+]\d+(.\d+)?$").Match(texto).Success;
+
+            if ((int.TryParse(texto, out numeroInt) || double.TryParse(texto, out numeroDouble)) && match)
+                return GetTipoCelda("Int");
+
+            return GetTipoCelda("String");
+        }
+
+        private UInt32Value ResolverEstiloColumna(int indiceColumna)
+        {
+            UInt32Value estilo = HojaEstilos.DATO_NORMAL;
+
+            if (_estilos.Count() > 0)
+            {
+                var estiloColumna = _estilos.Where(ec => ec.Columna == indiceColumna).FirstOrDefault();
+
+                if (estiloColumna != null)
+                    estilo = estiloColumna.Estilo;
+            }
+
+            return estilo;
         }
     }
 }

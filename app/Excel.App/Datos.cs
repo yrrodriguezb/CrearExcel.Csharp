@@ -1,3 +1,4 @@
+using System;
 using System.Data;
 
 namespace Excel.App
@@ -6,8 +7,8 @@ namespace Excel.App
     {
         public static DataTable CrearTabla()
         {
-            var columnas = 35;
-            var filas = 10000;
+            var columnas = 20;
+            var filas = 100000;
 
             DataTable table = new DataTable("ParentTable");
             DataColumn column;
@@ -49,7 +50,16 @@ namespace Excel.App
                 
                 for (int j = 1; j < columnas; j++)
                 {
-                    row[$"Columna {j}"] = $"Datos Columna [{i}][{j}]"; 
+                    row[$"Columna {j}"] = $"Descripción Fila [{i}] Columna [{j}]";
+
+                    if (j == 8)
+                        row[$"Columna {j}"] = $"1350000.150"; 
+                    else if (j == 9)
+                        row[$"Columna {j}"] = DateTime.Now.ToShortDateString();
+                    else if (j == 10)
+                        row[$"Columna {j}"] = new Random().Next(1, 1000000);
+                    else if (j == 11)
+                        row[$"Columna {j}"] = DateTime.Now.AddDays(i).ToShortDateString();
                 }
 
                 table.Rows.Add(row);

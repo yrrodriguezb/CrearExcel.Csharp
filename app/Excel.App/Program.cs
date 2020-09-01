@@ -18,6 +18,12 @@ namespace Excel.App
                 _excel.FuenteDeDatos = dt;
                 _excel.SubtitulosHandler = AgregarSubtitulos;
                 _excel.ExcluirColumnas = new string[] { "Columna 3", "Columna 4" };
+                _excel.EstilosColumnas = new EstiloColumnas[]
+                {
+                    new EstiloColumnas { Estilo = HojaEstilos.DATO_NUMERICO, Columnas = new int[] { 0 } },
+                    new EstiloColumnas { Estilo = HojaEstilos.DATO_MONEDA, Columnas = new int[] { 6, 8 } },
+                    new EstiloColumnas { Estilo = HojaEstilos.DATO_FECHA, Columnas = new int[] { 7, 9 } }
+                };
                 _excel.Construir();
                 _excel.Guardar();
             }

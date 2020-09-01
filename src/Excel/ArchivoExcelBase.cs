@@ -14,6 +14,12 @@ namespace Excel
     public delegate void AgregarEncabezadosHandler();
     public delegate void AgregarInformacionHandler();
     public delegate void EstablecerAnchoColumnasHandler();
+    public class EstiloColumnas
+    {
+        public UInt32Value Estilo { get; set; }
+        public int Columna { get; set; }
+        public int[] Columnas { get; set; }
+    }
 
 
     public class ArchivoExcelBase
@@ -28,7 +34,6 @@ namespace Excel
         private SheetData _sheetData { get; set; }
         private UInt32 _numeroFila { get; set; }     
         protected string _rutaArchivo { get; set; }
-
         private string[] _letras;
         public string[] Letras
         {
@@ -78,11 +83,18 @@ namespace Excel
             get { return _excluirColumnas; }
             set { _excluirColumnas = value; }
         }
+
+        private EstiloColumnas[] _estilosColumnas;
+        public EstiloColumnas[] EstilosColumnas
+        {
+            get { return _estilosColumnas; }
+            set { _estilosColumnas = value; AplanarConfigEstiloColumnas(); }
+        }
+        
+        protected EstiloColumnas[] _estilos { get; set; }
         
         public string Titulo { get; set; }
-        
         public string NombreHoja {get; set; }
-        
         public AgregarSubtitulosHandler SubtitulosHandler { get; set; }
         public AgregarEncabezadosHandler EncabezadosHandler { get; set; }
         public AgregarInformacionHandler InformacionHandler { get; set; }
@@ -145,7 +157,8 @@ namespace Excel
             _numeroFila = UInt32.Parse("1");
             _encabezados = new string[] {};
             _excluirColumnas = new string[] {};
-            _fuenteDeDatos = new DataTable();    
+            _fuenteDeDatos = new DataTable();   
+            _estilos = new EstiloColumnas[] {}; 
         }
 
         protected void CrearLibro()
@@ -181,6 +194,13 @@ namespace Excel
             };
 
             _hojas.Append(hoja);
+        }
+
+        protected void CrearEstilos()
+        {
+            WorkbookStylesPart workbookStylesPart =_documentoExcel.WorkbookPart.AddNewPart<WorkbookStylesPart>();
+            workbookStylesPart.Stylesheet = HojaEstilos.GenerarEstilos();
+            workbookStylesPart.Stylesheet.Save();
         }
 
         public void Guardar()
@@ -230,7 +250,7 @@ namespace Excel
                 .Skip(5)
                 .Where(c => c.CellValue != null);
 
-            var configAnchoCeldas = celdas
+            var configAnchoColumnas = celdas
                 .GroupBy(c =>
                 {
                     match = regex.Match(c.CellReference.ToString());
@@ -241,7 +261,7 @@ namespace Excel
                 .Where(o => o.Puntos > TAMANIO_CELDA_POR_DEFECTO)
                 .ToArray();
 
-            foreach (var config in configAnchoCeldas)
+            foreach (var config in configAnchoColumnas)
             {
                 SetAnchoColumna(config.IndiceCelda, config.Puntos);
             }
@@ -337,15 +357,15 @@ namespace Excel
 
         public Row NuevaFila(int longuitud)
         {
-            return NuevaFila(longuitud, CellValues.String);
+            return NuevaFila(longuitud, "String");
         }
 
-        public Row NuevaFila(int longuitud, EnumValue<CellValues> tipo)
+        public Row NuevaFila(int longuitud, string tipo)
         {
             return NuevaFila(longuitud, tipo, 0);
         }
 
-        public Row NuevaFila(int longuitud, EnumValue<CellValues> tipo, UInt32Value estilo)
+        public Row NuevaFila(int longuitud, string tipo, UInt32Value estilo)
         {
             Row fila = GetFila();
 
@@ -355,7 +375,7 @@ namespace Excel
                     return new Cell
                     {
                         CellReference = _letras[indice] + fila.RowIndex,
-                        DataType = tipo,
+                        DataType = GetTipoCelda(tipo),
                         StyleIndex = estilo
                     };
                 });
@@ -364,6 +384,33 @@ namespace Excel
             AgregarFila(fila);
 
             return fila;
+        }
+
+        protected CellValues GetTipoCelda(string nombreTipo)
+        {
+            Dictionary<string, CellValues> tiposCelda  = new Dictionary<string, CellValues>()
+            {
+                { "Date", CellValues.Date },
+                { "TimeSpan", CellValues.Date },
+                { "Boolean", CellValues.Boolean },
+                { "Byte", CellValues.Number },
+                { "Decimal", CellValues.Number },
+                { "Double", CellValues.Number },
+                { "Int", CellValues.Number },
+                { "Char", CellValues.String },
+                { "String", CellValues.String }
+            };
+
+            return tiposCelda[nombreTipo];
+        }
+
+        private void AplanarConfigEstiloColumnas()
+        {
+            _estilos = _estilosColumnas.SelectMany(ec => ec.Columnas, (ec, c) => new EstiloColumnas {
+                Estilo = ec.Estilo,
+                Columna = c
+            })
+            .ToArray();
         }
 
         private bool IsNull(string str)
