@@ -14,13 +14,13 @@ namespace Excel
     public delegate void AgregarEncabezadosHandler();
     public delegate void AgregarInformacionHandler();
     public delegate void EstablecerAnchoColumnasHandler();
+
     public class EstiloColumnas
     {
         public UInt32Value Estilo { get; set; }
         public int Columna { get; set; }
         public int[] Columnas { get; set; }
     }
-
 
     public class ArchivoExcelBase
     {
@@ -34,6 +34,7 @@ namespace Excel
         private SheetData _sheetData { get; set; }
         private UInt32 _numeroFila { get; set; }     
         protected string _rutaArchivo { get; set; }
+        
         private string[] _letras;
         public string[] Letras
         {
@@ -84,6 +85,13 @@ namespace Excel
             set { _excluirColumnas = value; }
         }
 
+        private Stylesheet _hojaDeEstilos;
+        public Stylesheet HojaDeEstilos
+        {
+            get { return _hojaDeEstilos; }
+            set { _hojaDeEstilos = SetHojaDeEstilos(value); }
+        }
+        
         private EstiloColumnas[] _estilosColumnas;
         public EstiloColumnas[] EstilosColumnas
         {
@@ -157,7 +165,8 @@ namespace Excel
             _numeroFila = UInt32.Parse("1");
             _encabezados = new string[] {};
             _excluirColumnas = new string[] {};
-            _fuenteDeDatos = new DataTable();   
+            _fuenteDeDatos = new DataTable();  
+            _hojaDeEstilos = HojaEstilos.GenerarEstilos(); 
             _estilos = new EstiloColumnas[] {}; 
         }
 
@@ -199,7 +208,7 @@ namespace Excel
         protected void CrearEstilos()
         {
             WorkbookStylesPart workbookStylesPart =_documentoExcel.WorkbookPart.AddNewPart<WorkbookStylesPart>();
-            workbookStylesPart.Stylesheet = HojaEstilos.GenerarEstilos();
+            workbookStylesPart.Stylesheet = _hojaDeEstilos;
             workbookStylesPart.Stylesheet.Save();
         }
 
@@ -281,6 +290,14 @@ namespace Excel
                     .Select(c => c.ColumnName)
                     .ToArray();
             }
+        }
+        
+        private Stylesheet SetHojaDeEstilos(Stylesheet estilos)
+        {
+            if (estilos != null && estilos.HasChildren)
+                return estilos;
+
+            return HojaEstilos.GenerarEstilos();
         }
 
         public void SetAnchoColumna(int indice, DoubleValue ancho)

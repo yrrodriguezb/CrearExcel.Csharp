@@ -2,7 +2,6 @@
 using System.Linq;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Spreadsheet;
-using Excel;
 
 namespace Excel.App
 {
