@@ -65,17 +65,27 @@ namespace Excel
 
         private void AgregarEncabezadosTabla()
         {
-            if (Encabezados.Length == 0)
-                return;
-                
-            Row fila = NuevaFila(LonguitudColumnas, "String", HojaEstilos.ENCABEZADO_TABLA);
+            AgregarEncabezados(Encabezados);
+        }
 
-            fila.Cast<Cell>()
-                .Select((celda, indice) => {
-                    celda.CellValue = new CellValue(Encabezados[indice]);
-                    return celda;
+        public void AgregarEncabezados(string[] encabezados)
+        {
+            if (encabezados == null || encabezados.Length == 0)
+                return;
+
+            Row fila = GetFila();
+
+            OpenXmlElement[] openXmlElements = encabezados
+                .Select((titulo, indice) => new Cell {
+                    CellReference = GetLetra(indice) + fila.RowIndex,
+                    CellValue = new CellValue(titulo),
+                    DataType = CellValues.String,
+                    StyleIndex = HojaEstilos.ENCABEZADO_TABLA
                 })
                 .ToArray();
+            
+            fila.Append(openXmlElements);
+            AgregarFila(fila);
         }
 
         private void AgregarFilaVacia()

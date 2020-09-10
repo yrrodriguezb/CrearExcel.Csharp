@@ -1,7 +1,4 @@
 ﻿using System.Data;
-using System.Linq;
-using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Spreadsheet;
 
 namespace Excel.App
 {
@@ -20,12 +17,12 @@ namespace Excel.App
                 _excel.FuenteDeDatos = dt;
                 // _excel.EncabezadosHandler = ConstruirEncabezados;
                 _excel.SubtitulosHandler = AgregarSubtitulos;
-                /* _excel.ExcluirColumnas = new string[] { "Columna 3", "Columna 4" };
-                _excel.EstilosColumnas = new EstiloColumnas[]
+                // _excel.ExcluirColumnas = new string[] { "Columna 3", "Columna 4" };
+                /* _excel.EstilosColumnas = new EstiloColumnas[]
                 {
                     new EstiloColumnas { Estilo = HojaEstilos.DATO_NUMERICO, Columnas = new int[] { 0 } },
-                    new EstiloColumnas { Estilo = HojaEstilos.DATO_MONEDA, Columnas = new int[] { 6, 8 } },
-                    new EstiloColumnas { Estilo = HojaEstilos.DATO_FECHA, Columnas = new int[] { 7, 9 } }
+                    new EstiloColumnas { Estilo = HojaEstilos.DATO_MONEDA, Columnas = new int[] { 8, 10 } },
+                    new EstiloColumnas { Estilo = HojaEstilos.DATO_FECHA, Columnas = new int[] { 9, 11 } }
                 }; */
                 _excel.Construir();
                 _excel.Guardar();
@@ -45,12 +42,7 @@ namespace Excel.App
         }
 
         static void ConstruirEncabezados()
-        {
-            OpenXmlElement[] openXmlElements;
-            Row fila;
-            string filaActual; 
-            
-            fila = _excel.GetFila();
+        {   
             var Encabezados = new string[]
             {
                 "Columnas", "",
@@ -60,26 +52,16 @@ namespace Excel.App
                 "Columnas", ""
             };
 
-            openXmlElements = Enumerable.Range(0, Encabezados.Length)
-                .Select((e, i) => new Cell {
-                    CellReference = _excel.GetLetra(i) + fila.RowIndex,
-                    CellValue = new CellValue(Encabezados[i]),
-                    DataType = CellValues.String,
-                    StyleIndex = HojaEstilos.ENCABEZADO_TABLA
-                })
-                .ToArray();
-            
-            fila.Append(openXmlElements);
-            filaActual = _excel.GetNumeroFilaActual().ToString();
+           _excel.AgregarEncabezados(Encabezados);
 
-            _excel.AgregarFila(fila);
+            string filaActual = _excel.GetNumeroFilaActual().ToString();
+
             _excel.CombinarCeldas("A" + filaActual, "B" + filaActual);
             _excel.CombinarCeldas("C" + filaActual, "D" + filaActual);
             _excel.CombinarCeldas("E" + filaActual, "F" + filaActual);
             _excel.CombinarCeldas("G" + filaActual, "H" + filaActual);
             _excel.CombinarCeldas("I" + filaActual, "J" + filaActual);
 
-            fila = _excel.GetFila();
             Encabezados = new string[]
             {
                 "1", "2",
@@ -89,18 +71,7 @@ namespace Excel.App
                 "9", "10"
             };
 
-            openXmlElements = Enumerable.Range(0, Encabezados.Length)
-                .Select((e, i) => new Cell {
-                    CellReference = _excel.GetLetra(i) + fila.RowIndex,
-                    CellValue = new CellValue(Encabezados[i]),
-                    DataType = CellValues.String,
-                    StyleIndex = HojaEstilos.ENCABEZADO_TABLA
-                })
-                .ToArray();
-            
-            fila.Append(openXmlElements);
-            _excel.AgregarFila(fila);
-        
+            _excel.AgregarEncabezados(Encabezados);
         }
 
         static void EstablecerAnchoColumna()
