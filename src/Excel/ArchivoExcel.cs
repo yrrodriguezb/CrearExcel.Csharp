@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
@@ -98,41 +99,32 @@ namespace Excel
         {
             DataRowCollection filas = FuenteDeDatos.Rows;
             DataColumnCollection columnas = FuenteDeDatos.Columns;
-            Row filaExcel = null;
-            Cell celda = null;
-            OpenXmlElement[] xmlElemento = null;
-            int indice = 0;
-            string texto = string.Empty;
+            Row fila = null;
+            IEnumerable<Cell> xmlElemento = null;
 
-            foreach(DataRow fila in filas)
+            foreach(DataRow dr in filas)
             {
-                filaExcel = GetFila();
-                xmlElemento = new OpenXmlElement[columnas.Count];
+                fila = GetFila();
+            
+                xmlElemento = columnas
+                    .Cast<DataColumn>()
+                    .Where(c => !ExcluirColumna(c.ColumnName))
+                    .Select((c, i) => NuevaCelda(i, fila.RowIndex, dr[c.ColumnName].ToString()));
 
-                foreach (DataColumn columna in columnas)
-                {                    
-                    if (ExcluirColumna(columna.ColumnName))
-                        continue;
-
-                    texto = fila[columna.ColumnName].ToString();
-
-                    celda = new Cell
-                    {
-                        CellReference = GetLetra(indice) + filaExcel.RowIndex,
-                        DataType = ResolverTipoDeDatoCelda(texto),
-                        CellValue = new CellValue(texto),
-                        StyleIndex = ResolverEstiloColumna(indice)
-                    };
-
-                    xmlElemento[indice] = celda;
-                    indice++;
-                }
-
-                filaExcel.Append(xmlElemento);
-                AgregarFila(filaExcel);
-                indice = 0;
-                texto = string.Empty;
+                fila.Append(xmlElemento);
+                AgregarFila(fila);
             }
+        }
+
+        private Cell NuevaCelda(int indice, UInt32Value fila, string texto)
+        {
+            return new Cell
+            {
+                CellReference = GetLetra(indice) + fila,
+                DataType = ResolverTipoDeDatoCelda(texto),
+                CellValue = new CellValue(texto),
+                StyleIndex = ResolverEstiloColumna(indice)
+            };
         }
 
         private EnumValue<CellValues> ResolverTipoDeDatoCelda(string texto)
