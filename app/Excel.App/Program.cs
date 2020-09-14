@@ -1,4 +1,6 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
+using System.Diagnostics;
 using DocumentFormat.OpenXml;
 
 namespace Excel.App
@@ -9,6 +11,9 @@ namespace Excel.App
 
         static void Main(string[] args)
         {
+            Stopwatch timeMeasure = new Stopwatch();
+            timeMeasure.Start();
+
             DataTable dt = Datos.CrearTabla();
             _excel = new ArchivoExcel("Ejemplo.xlsx");
 
@@ -26,7 +31,7 @@ namespace Excel.App
                     new EstiloColumnas { Estilo = HojaEstilos.DATO_FECHA, Columnas = new int[] { 9, 11 } }
                 }; */
                 _excel.FilaNivelAgregado += OnFilaNivelAgregado;
-                _excel.NombreColumnaNivel = "id";
+                // _excel.NombreColumnaNivel = "id";
                 _excel.Construir();
                 _excel.Guardar();
             }
@@ -35,6 +40,12 @@ namespace Excel.App
                 _excel.CerrarLibro();
                 // excel.EliminarDocumento();
             }
+
+            timeMeasure.Stop();
+           
+            TimeSpan ts = timeMeasure.Elapsed; 
+            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
+            Console.WriteLine($"Tiempo de ejecución: {elapsedTime}");
         }
 
         static void OnFilaNivelAgregado(object sender, FilaNivelAgregadaEventArgs e)
