@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Spreadsheet;
 
@@ -76,14 +75,8 @@ namespace Excel
 
             Row fila = GetFila();
 
-            OpenXmlElement[] openXmlElements = encabezados
-                .Select((titulo, indice) => new Cell {
-                    CellReference = GetLetra(indice) + fila.RowIndex,
-                    CellValue = new CellValue(titulo),
-                    DataType = CellValues.String,
-                    StyleIndex = HojaEstilos.ENCABEZADO_TABLA
-                })
-                .ToArray();
+            var openXmlElements = encabezados
+                .Select((titulo, indice) => NuevaCelda(indice, fila.RowIndex, titulo, HojaEstilos.ENCABEZADO_TABLA));
             
             fila.Append(openXmlElements);
             AgregarFila(fila);
@@ -101,29 +94,43 @@ namespace Excel
             DataColumnCollection columnas = FuenteDeDatos.Columns;
             Row fila = null;
             IEnumerable<Cell> xmlElemento = null;
+            bool trigger = columnas.Contains(NombreColumnaNivel);
 
             foreach(DataRow dr in filas)
             {
                 fila = GetFila();
-            
-                xmlElemento = columnas
-                    .Cast<DataColumn>()
+                
+                xmlElemento = columnas.Cast<DataColumn>()
                     .Where(c => !ExcluirColumna(c.ColumnName))
                     .Select((c, i) => NuevaCelda(i, fila.RowIndex, dr[c.ColumnName].ToString()));
-
+ 
                 fila.Append(xmlElemento);
+
+                if (trigger && DesencadenarEventoAgregarFila(dr[NombreColumnaNivel].ToString()))
+                    ConfigurarEventoFilaNivelAgregada(fila, dr[NombreColumnaNivel].ToString());
+                
                 AgregarFila(fila);
             }
         }
 
         private Cell NuevaCelda(int indice, UInt32Value fila, string texto)
         {
+            return NuevaCelda(indice, fila, texto, null);
+        }
+
+        private Cell NuevaCelda(int indice, UInt32Value fila, string texto, UInt32Value estilo)
+        {
+            UInt32Value styleIndex = estilo;
+
+            if (styleIndex == null)
+                styleIndex = ResolverEstiloColumna(indice);
+
             return new Cell
             {
                 CellReference = GetLetra(indice) + fila,
                 DataType = ResolverTipoDeDatoCelda(texto),
                 CellValue = new CellValue(texto),
-                StyleIndex = ResolverEstiloColumna(indice)
+                StyleIndex = styleIndex
             };
         }
 
@@ -132,7 +139,7 @@ namespace Excel
             int numeroInt = 0;
             double numeroDouble = 0;
 
-            bool match = new Regex(@"^0$|^[^0+]\d+(.\d+)?$").Match(texto).Success;
+            bool match = !texto.StartsWith("0") || texto == "0";
 
             if ((int.TryParse(texto, out numeroInt) || double.TryParse(texto, out numeroDouble)) && match)
                 return GetTipoCelda("Int");
@@ -153,6 +160,19 @@ namespace Excel
             }
 
             return estilo;
+        }
+
+        protected bool DesencadenarEventoAgregarFila(string valorColumna)
+        {
+            int nivel = 0;
+            int.TryParse(valorColumna, out nivel);
+            return nivel > 0;
+        }
+
+        private void ConfigurarEventoFilaNivelAgregada(Row fila, string nivel)
+        {
+            var args = new FilaNivelAgregadaEventArgs(fila, int.Parse(nivel));
+            OnFilaNivelAgregada(this, args);
         }
     }
 }

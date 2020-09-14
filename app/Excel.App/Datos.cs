@@ -25,6 +25,13 @@ namespace Excel.App
                     column.ReadOnly = true;
                     column.Unique = true;
                 }
+                else if (i == (columnas - 1))
+                {
+                    column = new DataColumn();
+                    column.DataType = System.Type.GetType("System.Int32");
+                    column.ColumnName = "Nivel";
+                    column.AutoIncrement = false;
+                }
                 else
                 {
                     column = new DataColumn();
@@ -50,8 +57,6 @@ namespace Excel.App
                 
                 for (int j = 1; j < columnas; j++)
                 {
-                    row[$"Columna {j}"] = $"Descripción Fila [{i}] Columna [{j}]";
-
                     if (j == 8)
                         row[$"Columna {j}"] = $"1350000.150"; 
                     else if (j == 9)
@@ -60,6 +65,10 @@ namespace Excel.App
                         row[$"Columna {j}"] = new Random().Next(1, 1000000);
                     else if (j == 11)
                         row[$"Columna {j}"] = DateTime.Now.AddDays(i).ToShortDateString();
+                    else if (j == (columnas - 1))
+                        row["Nivel"] = new Random().Next(0, 6);
+                    else
+                        row[$"Columna {j}"] = $"Descripción Fila [{i}] Columna [{j}]";
                 }
 
                 table.Rows.Add(row);

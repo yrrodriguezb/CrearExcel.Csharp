@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using DocumentFormat.OpenXml;
 
 namespace Excel.App
 {
@@ -17,13 +18,15 @@ namespace Excel.App
                 _excel.FuenteDeDatos = dt;
                 // _excel.EncabezadosHandler = ConstruirEncabezados;
                 _excel.SubtitulosHandler = AgregarSubtitulos;
-                // _excel.ExcluirColumnas = new string[] { "Columna 3", "Columna 4" };
+                _excel.ExcluirColumnas = new string[] { "Columna 3", "Columna 4" };
                 /* _excel.EstilosColumnas = new EstiloColumnas[]
                 {
                     new EstiloColumnas { Estilo = HojaEstilos.DATO_NUMERICO, Columnas = new int[] { 0 } },
                     new EstiloColumnas { Estilo = HojaEstilos.DATO_MONEDA, Columnas = new int[] { 8, 10 } },
                     new EstiloColumnas { Estilo = HojaEstilos.DATO_FECHA, Columnas = new int[] { 9, 11 } }
                 }; */
+                _excel.FilaNivelAgregado += OnFilaNivelAgregado;
+                _excel.NombreColumnaNivel = "id";
                 _excel.Construir();
                 _excel.Guardar();
             }
@@ -31,6 +34,30 @@ namespace Excel.App
             {
                 _excel.CerrarLibro();
                 // excel.EliminarDocumento();
+            }
+        }
+
+        static void OnFilaNivelAgregado(object sender, FilaNivelAgregadaEventArgs e)
+        {
+            UInt32Value estilo =  null;
+
+            if (e.Nivel == 1)
+                estilo = HojaEstilos.NIVEL_UNO;
+            else if (e.Nivel == 2)
+                estilo = HojaEstilos.NIVEL_DOS;
+            else if (e.Nivel == 3)
+                estilo = HojaEstilos.NIVEL_TRES;
+            else if (e.Nivel == 4)
+                estilo = HojaEstilos.NIVEL_CUATRO;
+            else if (e.Nivel == 5)
+                estilo = HojaEstilos.NIVEL_CINCO;
+            else if (e.Nivel == 6)
+                estilo = HojaEstilos.NIVEL_SEIS;
+
+            foreach(var celda in e.Celdas)
+            {
+                if (estilo != null)
+                    celda.StyleIndex = estilo;
             }
         }
 

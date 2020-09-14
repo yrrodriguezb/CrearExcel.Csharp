@@ -98,6 +98,19 @@ namespace Excel
             get { return _estilosColumnas; }
             set { _estilosColumnas = value; AplanarConfigEstiloColumnas(); }
         }
+
+        private string _nombreColumnaNivel;
+        public string NombreColumnaNivel
+        {
+            get { return _nombreColumnaNivel; }
+            set 
+            {
+                if(IsNull(value))
+                    throw new ArgumentNullException(nameof(NombreColumnaNivel), "La propiedad no puede ser nula o vacia");
+                _nombreColumnaNivel = value; 
+            }
+        }
+        
         
         protected EstiloColumnas[] _estilos { get; set; }
         
@@ -107,7 +120,7 @@ namespace Excel
         public AgregarEncabezadosHandler EncabezadosHandler { get; set; }
         public AgregarInformacionHandler InformacionHandler { get; set; }
         public EstablecerAnchoColumnasHandler AnchoColumnasHandler { get; set; }
-
+        public event EventHandler<FilaNivelAgregadaEventArgs> FilaNivelAgregado;
 
         public ArchivoExcelBase(string rutaArchivo, string titulo, string nombreHoja)
         {
@@ -167,7 +180,8 @@ namespace Excel
             _excluirColumnas = new string[] {};
             _fuenteDeDatos = new DataTable();  
             _hojaDeEstilos = HojaEstilos.GenerarEstilos(); 
-            _estilos = new EstiloColumnas[] {}; 
+            _estilos = new EstiloColumnas[] {};
+            _nombreColumnaNivel = "Nivel";
         }
 
         protected void CrearLibro()
@@ -436,6 +450,14 @@ namespace Excel
         private bool IsNull(string str)
         {
             return string.IsNullOrEmpty(str) || string.IsNullOrWhiteSpace(str);
+        }
+
+        protected void OnFilaNivelAgregada(object sender, FilaNivelAgregadaEventArgs args)
+        {
+            if (FilaNivelAgregado != null)
+            {
+                FilaNivelAgregado.Invoke(sender, args);
+            }
         }
     }
 }
