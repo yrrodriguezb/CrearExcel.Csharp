@@ -51,6 +51,7 @@ namespace Excel.App
         static void OnFilaNivelAgregado(object sender, FilaNivelAgregadaEventArgs e)
         {
             UInt32Value estilo =  null;
+            HojaDeEstilos HojaEstilos = new HojaDeEstilos();
 
             if (e.Nivel == 1)
                 estilo = HojaEstilos.NIVEL_UNO;

@@ -38,13 +38,13 @@ namespace Excel
 
         private void AgregarTitulo()
         {
-            Row fila = NuevaFila(LonguitudColumnas - 1, "String", HojaEstilos.TITULO);
+            Row fila = NuevaFila(LonguitudColumnas - 1, "String", HojaDeEstilos.TITULO);
             AgregarTextoFila(fila, Titulo);
         }
 
         public void AgregarSubTitulo(string subTitulo)
         {
-            Row fila = NuevaFila(LonguitudColumnas - 1, "String", HojaEstilos.SUBTITULO);
+            Row fila = NuevaFila(LonguitudColumnas - 1, "String", HojaDeEstilos.SUBTITULO);
             AgregarTextoFila(fila, subTitulo);
         }
 
@@ -76,7 +76,7 @@ namespace Excel
             Row fila = GetFila();
 
             var openXmlElements = encabezados
-                .Select((titulo, indice) => NuevaCelda(indice, fila.RowIndex, titulo, HojaEstilos.ENCABEZADO_TABLA));
+                .Select((titulo, indice) => NuevaCelda(indice, fila.RowIndex, titulo, HojaDeEstilos.ENCABEZADO_TABLA));
             
             fila.Append(openXmlElements);
             AgregarFila(fila);
@@ -149,7 +149,7 @@ namespace Excel
 
         private UInt32Value ResolverEstiloColumna(int indiceColumna)
         {
-            UInt32Value estilo = HojaEstilos.DATO_NORMAL;
+            UInt32Value estilo = HojaDeEstilos.DATO_NORMAL;
 
             if (_estilos.Count() > 0)
             {

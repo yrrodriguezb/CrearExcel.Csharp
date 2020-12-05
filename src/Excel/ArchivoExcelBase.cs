@@ -85,11 +85,11 @@ namespace Excel
             set { _excluirColumnas = value; }
         }
 
-        private Stylesheet _hojaDeEstilos;
-        public Stylesheet HojaDeEstilos
+        private IHojaDeEstilos _hojaDeEstilos;
+        public IHojaDeEstilos HojaDeEstilos
         {
             get { return _hojaDeEstilos; }
-            set { _hojaDeEstilos = SetHojaDeEstilos(value); }
+            set { _hojaDeEstilos = GetHojaDeEstilos(value); }
         }
         
         private EstiloColumnas[] _estilosColumnas;
@@ -179,7 +179,7 @@ namespace Excel
             _encabezados = new string[] {};
             _excluirColumnas = new string[] {};
             _fuenteDeDatos = new DataTable();  
-            _hojaDeEstilos = HojaEstilos.GenerarEstilos(); 
+            _hojaDeEstilos = new HojaDeEstilos(); 
             _estilos = new EstiloColumnas[] {};
             _nombreColumnaNivel = "Nivel";
         }
@@ -222,7 +222,7 @@ namespace Excel
         protected void CrearEstilos()
         {
             WorkbookStylesPart workbookStylesPart =_documentoExcel.WorkbookPart.AddNewPart<WorkbookStylesPart>();
-            workbookStylesPart.Stylesheet = _hojaDeEstilos;
+            workbookStylesPart.Stylesheet = _hojaDeEstilos.GenerarEstilos();
             workbookStylesPart.Stylesheet.Save();
         }
 
@@ -306,12 +306,12 @@ namespace Excel
             }
         }
         
-        private Stylesheet SetHojaDeEstilos(Stylesheet estilos)
+        private IHojaDeEstilos GetHojaDeEstilos(IHojaDeEstilos estilos)
         {
-            if (estilos != null && estilos.HasChildren)
+            if (estilos != null && estilos.GenerarEstilos().HasChildren)
                 return estilos;
 
-            return HojaEstilos.GenerarEstilos();
+            return new HojaDeEstilos();
         }
 
         public void SetAnchoColumna(int indice, DoubleValue ancho)

@@ -3,7 +3,7 @@ using DocumentFormat.OpenXml.Spreadsheet;
 
 namespace Excel
 {
-    public class HojaEstilos
+    public class HojaDeEstilos : IHojaDeEstilos
     {
         private static string COLOR_ENCABEZADO_TABLA = "cfd8dc";
         private static string COLOR_BORDE = "eceff1";
@@ -16,23 +16,22 @@ namespace Excel
         private static string COLOR_NIVEL_CINCO = "9EBDAE";
         private static string COLOR_NIVEL_SEIS = "92b5a4";
 
-        public static UInt32Value TITULO = 1;
-        public static UInt32Value SUBTITULO = 2;
-        public static UInt32Value ENCABEZADO_TABLA = 3;
-        public static UInt32Value DATO_NORMAL = 4;
-        public static UInt32Value DATO_NUMERICO = 5;
-        public static UInt32Value DATO_MONEDA = 6;
-        public static UInt32Value DATO_FECHA = 7;
-        public static UInt32Value NIVEL_UNO = 8;
-        public static UInt32Value NIVEL_DOS = 9;
-        public static UInt32Value NIVEL_TRES = 10;
-        public static UInt32Value NIVEL_CUATRO = 11;
-        public static UInt32Value NIVEL_CINCO = 12;
-        public static UInt32Value NIVEL_SEIS = 13;
+        public UInt32Value TITULO => 1;
+        public UInt32Value SUBTITULO => 2;
+        public UInt32Value ENCABEZADO_TABLA => 3;
+        public UInt32Value DATO_NORMAL => 4;
+        public UInt32Value DATO_NUMERICO => 5;
+        public UInt32Value DATO_MONEDA => 6;
+        public UInt32Value DATO_FECHA => 7;
+        public UInt32Value NIVEL_UNO => 8;
+        public UInt32Value NIVEL_DOS => 9;
+        public UInt32Value NIVEL_TRES => 10;
+        public UInt32Value NIVEL_CUATRO => 11;
+        public UInt32Value NIVEL_CINCO => 12;
+        public UInt32Value NIVEL_SEIS => 13;
 
 
-
-        public static Stylesheet GenerarEstilos()
+        public Stylesheet GenerarEstilos()
         {
             Stylesheet Estilos =
             new Stylesheet(
