@@ -120,17 +120,12 @@ namespace Excel
 
         private Cell NuevaCelda(int indice, UInt32Value fila, string texto, UInt32Value estilo)
         {
-            UInt32Value styleIndex = estilo;
-
-            if (styleIndex == null)
-                styleIndex = ResolverEstiloColumna(indice);
-
             return new Cell
             {
                 CellReference = GetLetra(indice) + fila,
                 DataType = ResolverTipoDeDatoCelda(texto),
                 CellValue = new CellValue(texto),
-                StyleIndex = styleIndex
+                StyleIndex = estilo == null ? ResolverEstiloColumna(indice) : estilo
             };
         }
 
@@ -151,7 +146,7 @@ namespace Excel
         {
             UInt32Value estilo = HojaDeEstilos.DATO_NORMAL;
 
-            if (_estilos.Count() > 0)
+            if (_estilos.Length > 0)
             {
                 var estiloColumna = _estilos.Where(ec => ec.Columna == indiceColumna).FirstOrDefault();
 

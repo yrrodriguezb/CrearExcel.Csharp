@@ -24,12 +24,12 @@ namespace Excel.App
                 // _excel.EncabezadosHandler = ConstruirEncabezados;
                 _excel.SubtitulosHandler = AgregarSubtitulos;
                 _excel.ExcluirColumnas = new string[] { "Columna 3", "Columna 4" };
-                /* _excel.EstilosColumnas = new EstiloColumnas[]
+                _excel.EstilosColumnas = new EstiloColumnas[]
                 {
-                    new EstiloColumnas { Estilo = HojaEstilos.DATO_NUMERICO, Columnas = new int[] { 0 } },
-                    new EstiloColumnas { Estilo = HojaEstilos.DATO_MONEDA, Columnas = new int[] { 8, 10 } },
-                    new EstiloColumnas { Estilo = HojaEstilos.DATO_FECHA, Columnas = new int[] { 9, 11 } }
-                }; */
+                    new EstiloColumnas { Estilo = _excel.HojaDeEstilos.DATO_NUMERICO, Columnas = new int[] { 0 } },
+                    new EstiloColumnas { Estilo = _excel.HojaDeEstilos.DATO_MONEDA, Columnas = new int[] { 8, 10 } },
+                    new EstiloColumnas { Estilo = _excel.HojaDeEstilos.DATO_FECHA, Columnas = new int[] { 9, 11 } }
+                };
                 _excel.FilaNivelAgregado += OnFilaNivelAgregado;
                 // _excel.NombreColumnaNivel = "id";
                 _excel.Construir();
@@ -51,24 +51,23 @@ namespace Excel.App
         static void OnFilaNivelAgregado(object sender, FilaNivelAgregadaEventArgs e)
         {
             UInt32Value estilo =  null;
-            HojaDeEstilos HojaEstilos = new HojaDeEstilos();
 
             if (e.Nivel == 1)
-                estilo = HojaEstilos.NIVEL_UNO;
+                estilo = _excel.HojaDeEstilos.NIVEL_UNO;
             else if (e.Nivel == 2)
-                estilo = HojaEstilos.NIVEL_DOS;
+                estilo =  _excel.HojaDeEstilos.NIVEL_DOS;
             else if (e.Nivel == 3)
-                estilo = HojaEstilos.NIVEL_TRES;
+                estilo = _excel.HojaDeEstilos.NIVEL_TRES;
             else if (e.Nivel == 4)
-                estilo = HojaEstilos.NIVEL_CUATRO;
+                estilo = _excel.HojaDeEstilos.NIVEL_CUATRO;
             else if (e.Nivel == 5)
-                estilo = HojaEstilos.NIVEL_CINCO;
+                estilo = _excel.HojaDeEstilos.NIVEL_CINCO;
             else if (e.Nivel == 6)
-                estilo = HojaEstilos.NIVEL_SEIS;
+                estilo = _excel.HojaDeEstilos.NIVEL_SEIS;
 
-            foreach(var celda in e.Celdas)
+            if (estilo != null)
             {
-                if (estilo != null)
+                foreach(var celda in e.Celdas)
                     celda.StyleIndex = estilo;
             }
         }
